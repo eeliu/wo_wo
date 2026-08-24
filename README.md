@@ -5,7 +5,7 @@
 ## 技术栈
 
 - **前端**：HTML + JavaScript + Vite
-- **托管**：Cloudflare Pages
+- **托管**：GitHub Pages
 - **数据**：Supabase (PostgreSQL)
 - **认证**：Supabase Auth（GitHub OAuth）
 
@@ -57,35 +57,47 @@ npm run build
 
 产物输出到 `dist/` 目录。
 
-## 部署到 Cloudflare Pages
+## 部署到 GitHub Pages
 
-### 方式一：通过 Git 集成（推荐）
+本项目使用 **GitHub Actions** 自动构建并部署到 GitHub Pages。
 
-1. 将代码推送到 GitHub / GitLab 仓库
-2. 登录 [Cloudflare Dashboard](https://dash.cloudflare.com/)
-3. 进入 **Workers & Pages → Create → Pages → Connect to Git**
-4. 选择你的仓库，配置：
-   - **Framework preset**：`Vite`
-   - **Build command**：`npm run build`
-   - **Build output directory**：`dist`
-5. 在 **Settings → Environment variables** 中添加：
-   - `VITE_SUPABASE_URL`
-   - `VITE_SUPABASE_ANON_KEY`
-6. 点击 **Save and Deploy**
+### 1. 配置 GitHub Pages
 
-### 方式二：Wrangler CLI
+1. 在 GitHub 仓库 → **Settings → Pages**
+2. 在 **Build and deployment** 中，**Source** 选择 **GitHub Actions**（不要选 Branch，否则会覆盖 Actions 部署）
+
+### 2. 配置环境变量（仓库 Secrets）
+
+构建时需要 Supabase 配置，请在仓库 → **Settings → Secrets and variables → Actions** 中添加两个 **Repository secrets**：
+
+- `VITE_SUPABASE_URL`：Supabase 项目 URL
+- `VITE_SUPABASE_ANON_KEY`：Supabase anon public key
+
+> ⚠️ 不要用 `service_role` key，它拥有全部权限，绝不能暴露给前端。
+
+### 3. 配置 GitHub OAuth 登录
+
+1. 前往 [GitHub Developer Settings](https://github.com/settings/developers) → **OAuth Apps** → 编辑你的应用
+2. 将 **Homepage URL** 改为你的 Pages 地址：`https://<你的用户名>.github.io/bei_bei_recite/`
+3. 将 **Authorization callback URL** 保持为 `https://<你的项目>.supabase.co/auth/v1/callback`
+4. 回到 Supabase Dashboard → **Authentication → URL Configuration**，把以下地址加入 **Redirect URLs**：
+   - `https://<你的用户名>.github.io/bei_bei_recite/`
+   - `https://<你的用户名>.github.io/bei_bei_recite`（不带末尾斜杠）
+
+### 4. 触发部署
+
+推送到 `main` 分支即可自动触发部署。也可以在 **Actions** 页面手动运行 **Deploy to GitHub Pages**。
+
+部署完成后，访问 `https://<你的用户名>.github.io/bei_bei_recite/`。
+
+### 本地预览构建产物
 
 ```bash
-npm install -g wrangler
-wrangler login
-
-# 部署（需在部署环境设置环境变量）
-wrangler pages deploy dist
+npm run build
+npm run preview
 ```
 
-### 绑定自定义域名（可选）
-
-在 Pages 项目 → **Custom domains** 中添加你的域名。如果域名也在 Cloudflare 上，会自动配置 DNS 和 HTTPS。
+> 注意：GitHub Pages 部署在子路径 `/bei_bei_recite/` 下，`vite.config.js` 已设置 `base`。若部署到自定义域名或用户站点（`username.github.io`），需将 `base` 改为 `'/'`。
 
 ## 安全说明
 
@@ -94,7 +106,7 @@ wrangler pages deploy dist
 1. **RLS 强制开启**：`words` 表启用了行级安全，每个用户只能通过 `auth.uid() = user_id` 访问自己的数据。即使拿到 anon key 也无法读取他人数据。
 2. **前端只用 anon key**：`service_role` key（拥有全部权限）绝不暴露给前端。
 3. **环境变量隔离**：Supabase 密钥通过 `.env` 管理，且已加入 `.gitignore`，不会提交到仓库。
-4. **HTTPS**：Cloudflare Pages 自动提供 HTTPS 加密。
+4. **HTTPS**：GitHub Pages 自动提供 HTTPS 加密。
 5. **OAuth 安全**：登录使用 GitHub OAuth，应用不接触密码，密码由 GitHub 管理。GitHub 的 Client Secret 只配置在 Supabase 后台，绝不写入前端。
 
 > ⚠️ **重要**：切勿将 `service_role` key 写入前端代码或提交到 Git 仓库，否则任何人都能绕过 RLS 直接操作数据库。
