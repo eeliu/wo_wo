@@ -1,0 +1,283 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+
+<head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>单词记录本</title>
+    <link rel="stylesheet" href="/src/style.css" />
+</head>
+
+<body>
+    <!-- ========== 认证区域 ========== -->
+    <div id="auth-view" class="view hidden">
+        <div class="auth-card">
+            <h1>📖 单词记录本</h1>
+            <p class="subtitle">记录你遇到的每一个生词</p>
+
+            <div id="auth-error" class="error hidden"></div>
+
+            <button id="github-login-btn" class="btn btn-github">
+                <svg class="github-icon" viewBox="0 0 16 16" width="18" height="18" fill="currentColor"
+                    aria-hidden="true">
+                    <path
+                        d="M8 0C3.58 0 0 3.58 0 8c0 3.54 2.29 6.53 5.47 7.59.4.07.55-.17.55-.38 0-.19-.01-.82-.01-1.49-2.01.37-2.53-.49-2.69-.94-.09-.23-.48-.94-.82-1.13-.28-.15-.68-.52-.01-.53.63-.01 1.08.58 1.23.82.72 1.21 1.87.87 2.33.66.07-.52.28-.87.51-1.07-1.78-.2-3.64-.89-3.64-3.95 0-.87.31-1.59.82-2.15-.08-.2-.36-1.02.08-2.12 0 0 .67-.21 2.2.82.64-.18 1.32-.27 2-.27.68 0 1.36.09 2 .27 1.53-1.04 2.2-.82 2.2-.82.44 1.1.16 1.92.08 2.12.51.56.82 1.27.82 2.15 0 3.07-1.87 3.75-3.65 3.95.29.25.54.73.54 1.48 0 1.07-.01 1.93-.01 2.2 0 .21.15.46.55.38A8.01 8.01 0 0 0 16 8c0-4.42-3.58-8-8-8z" />
+                </svg>
+                使用 GitHub 登录
+            </button>
+
+            <p class="auth-hint">登录后即可记录和查看你的单词</p>
+        </div>
+    </div>
+
+    <!-- ========== 主应用区域 ========== -->
+    <div id="app-view" class="view hidden">
+        <header class="app-header">
+            <h1>📖 单词记录本</h1>
+            <div class="user-area">
+                <span id="user-email" class="user-email"></span>
+                <button id="logout-btn" class="btn btn-secondary">登出</button>
+            </div>
+        </header>
+
+        <div class="app-layout">
+            <!-- 左侧时间导航栏 -->
+            <aside class="time-nav" id="time-nav">
+                <h3 class="time-nav-title">📅 时间回顾</h3>
+                <nav id="time-nav-list" class="time-nav-list">
+                    <!-- 由 JS 动态生成时间分组 -->
+                </nav>
+            </aside>
+
+            <!-- 右侧内容区 -->
+            <main class="app-content">
+                <!-- 添加单词表单 -->
+                <!-- 添加单词折叠按钮 -->
+                <button type="button" id="toggle-add-btn" class="btn btn-primary add-toggle-btn">
+                    <span class="add-toggle-icon">＋</span> 添加单词
+                </button>
+
+                <section class="add-card collapsed" id="add-card">
+                    <form id="add-form">
+                        <div class="form-row">
+                            <input type="text" id="word-input" placeholder="单词 / 短语 *" required />
+                        </div>
+                        <div class="form-field">
+                            <div class="field-tabs">
+                                <label for="meaning-input">释义 *</label>
+                                <div class="tab-buttons" data-target="meaning-input">
+                                    <button type="button" class="tab-btn active" data-mode="edit">编辑</button>
+                                    <button type="button" class="tab-btn" data-mode="preview">预览</button>
+                                </div>
+                            </div>
+                            <div class="md-toolbar" data-target="meaning-input">
+                                <button type="button" class="tool-btn" data-action="bold" title="加粗">B</button>
+                                <button type="button" class="tool-btn" data-action="italic"
+                                    title="斜体"><em>I</em></button>
+                                <button type="button" class="tool-btn" data-action="strike"
+                                    title="删除线"><s>S</s></button>
+                                <span class="tool-sep"></span>
+                                <button type="button" class="tool-btn" data-action="h2" title="标题">H</button>
+                                <button type="button" class="tool-btn" data-action="ul" title="无序列表">•≡</button>
+                                <button type="button" class="tool-btn" data-action="ol" title="有序列表">1≡</button>
+                                <button type="button" class="tool-btn" data-action="quote" title="引用">❝</button>
+                                <span class="tool-sep"></span>
+                                <button type="button" class="tool-btn" data-action="code"
+                                    title="行内代码">&lt;/&gt;</button>
+                                <button type="button" class="tool-btn" data-action="link" title="链接">🔗</button>
+                                <button type="button" class="tool-btn" data-action="image" title="图片">🖼</button>
+                                <button type="button" class="tool-btn" data-action="upload" title="上传图片"
+                                    data-upload="meaning-input">⬆</button>
+                            </div>
+                            <textarea id="meaning-input" placeholder="输入释义，支持 Markdown..." maxlength="1024"
+                                required></textarea>
+                            <div class="md-preview hidden" data-preview="meaning-input"></div>
+                            <span class="char-count" data-for="meaning-input">0 / 1024</span>
+                        </div>
+                        <div class="form-field">
+                            <div class="field-tabs">
+                                <label for="example-input">例句（可选）</label>
+                                <div class="tab-buttons" data-target="example-input">
+                                    <button type="button" class="tab-btn active" data-mode="edit">编辑</button>
+                                    <button type="button" class="tab-btn" data-mode="preview">预览</button>
+                                </div>
+                            </div>
+                            <div class="md-toolbar" data-target="example-input">
+                                <button type="button" class="tool-btn" data-action="bold" title="加粗">B</button>
+                                <button type="button" class="tool-btn" data-action="italic"
+                                    title="斜体"><em>I</em></button>
+                                <button type="button" class="tool-btn" data-action="strike"
+                                    title="删除线"><s>S</s></button>
+                                <span class="tool-sep"></span>
+                                <button type="button" class="tool-btn" data-action="h2" title="标题">H</button>
+                                <button type="button" class="tool-btn" data-action="ul" title="无序列表">•≡</button>
+                                <button type="button" class="tool-btn" data-action="ol" title="有序列表">1≡</button>
+                                <button type="button" class="tool-btn" data-action="quote" title="引用">❝</button>
+                                <span class="tool-sep"></span>
+                                <button type="button" class="tool-btn" data-action="code"
+                                    title="行内代码">&lt;/&gt;</button>
+                                <button type="button" class="tool-btn" data-action="link" title="链接">🔗</button>
+                                <button type="button" class="tool-btn" data-action="image" title="图片">🖼</button>
+                                <button type="button" class="tool-btn" data-action="upload" title="上传图片"
+                                    data-upload="example-input">⬆</button>
+                            </div>
+                            <textarea id="example-input" placeholder="输入例句，支持 Markdown..." maxlength="1024"></textarea>
+                            <div class="md-preview hidden" data-preview="example-input"></div>
+                            <span class="char-count" data-for="example-input">0 / 1024</span>
+                        </div>
+                        <div class="form-field">
+                            <div class="field-tabs">
+                                <label for="note-input">备注（可选）</label>
+                                <div class="tab-buttons" data-target="note-input">
+                                    <button type="button" class="tab-btn active" data-mode="edit">编辑</button>
+                                    <button type="button" class="tab-btn" data-mode="preview">预览</button>
+                                </div>
+                            </div>
+                            <div class="md-toolbar" data-target="note-input">
+                                <button type="button" class="tool-btn" data-action="bold" title="加粗">B</button>
+                                <button type="button" class="tool-btn" data-action="italic"
+                                    title="斜体"><em>I</em></button>
+                                <button type="button" class="tool-btn" data-action="strike"
+                                    title="删除线"><s>S</s></button>
+                                <span class="tool-sep"></span>
+                                <button type="button" class="tool-btn" data-action="h2" title="标题">H</button>
+                                <button type="button" class="tool-btn" data-action="ul" title="无序列表">•≡</button>
+                                <button type="button" class="tool-btn" data-action="ol" title="有序列表">1≡</button>
+                                <button type="button" class="tool-btn" data-action="quote" title="引用">❝</button>
+                                <span class="tool-sep"></span>
+                                <button type="button" class="tool-btn" data-action="code"
+                                    title="行内代码">&lt;/&gt;</button>
+                                <button type="button" class="tool-btn" data-action="link" title="链接">🔗</button>
+                                <button type="button" class="tool-btn" data-action="image" title="图片">🖼</button>
+                                <button type="button" class="tool-btn" data-action="upload" title="上传图片"
+                                    data-upload="note-input">⬆</button>
+                            </div>
+                            <textarea id="note-input" placeholder="输入备注，支持 Markdown..." maxlength="1024"></textarea>
+                            <div class="md-preview hidden" data-preview="note-input"></div>
+                            <span class="char-count" data-for="note-input">0 / 1024</span>
+                        </div>
+                        <button type="submit" class="btn btn-primary">添加单词</button>
+                    </form>
+                </section>
+
+                <!-- 筛选与搜索 -->
+                <section class="toolbar">
+                    <div class="filter-group">
+                        <button class="filter-btn active" data-status="all">全部</button>
+                        <button class="filter-btn" data-status="new">新词</button>
+                        <button class="filter-btn" data-status="learning">学习中</button>
+                        <button class="filter-btn" data-status="mastered">已掌握</button>
+                    </div>
+                    <input type="text" id="search-input" class="search-input" placeholder="🔍 搜索单词..." />
+                </section>
+
+                <!-- 单词列表 -->
+                <section id="word-list" class="word-list"></section>
+                <p id="empty-state" class="empty-state hidden">还没有单词，添加第一个吧！🎉</p>
+            </main>
+        </div>
+    </div>
+
+    <!-- 编辑弹窗 -->
+    <div id="edit-modal" class="modal hidden">
+        <div class="modal-content">
+            <h2>编辑单词</h2>
+            <form id="edit-form">
+                <label>单词 / 短语</label>
+                <input type="text" id="edit-word" required />
+                <div class="field-tabs">
+                    <label>释义</label>
+                    <div class="tab-buttons" data-target="edit-meaning">
+                        <button type="button" class="tab-btn active" data-mode="edit">编辑</button>
+                        <button type="button" class="tab-btn" data-mode="preview">预览</button>
+                    </div>
+                </div>
+                <div class="md-toolbar" data-target="edit-meaning">
+                    <button type="button" class="tool-btn" data-action="bold" title="加粗">B</button>
+                    <button type="button" class="tool-btn" data-action="italic" title="斜体"><em>I</em></button>
+                    <button type="button" class="tool-btn" data-action="strike" title="删除线"><s>S</s></button>
+                    <span class="tool-sep"></span>
+                    <button type="button" class="tool-btn" data-action="h2" title="标题">H</button>
+                    <button type="button" class="tool-btn" data-action="ul" title="无序列表">•≡</button>
+                    <button type="button" class="tool-btn" data-action="ol" title="有序列表">1≡</button>
+                    <button type="button" class="tool-btn" data-action="quote" title="引用">❝</button>
+                    <span class="tool-sep"></span>
+                    <button type="button" class="tool-btn" data-action="code" title="行内代码">&lt;/&gt;</button>
+                    <button type="button" class="tool-btn" data-action="link" title="链接">🔗</button>
+                    <button type="button" class="tool-btn" data-action="image" title="图片">🖼</button>
+                    <button type="button" class="tool-btn" data-action="upload" title="上传图片"
+                        data-upload="edit-meaning">⬆</button>
+                </div>
+                <textarea id="edit-meaning" required maxlength="1024"></textarea>
+                <div class="md-preview hidden" data-preview="edit-meaning"></div>
+                <span class="char-count" data-for="edit-meaning">0 / 1024</span>
+                <div class="field-tabs">
+                    <label>例句</label>
+                    <div class="tab-buttons" data-target="edit-example">
+                        <button type="button" class="tab-btn active" data-mode="edit">编辑</button>
+                        <button type="button" class="tab-btn" data-mode="preview">预览</button>
+                    </div>
+                </div>
+                <div class="md-toolbar" data-target="edit-example">
+                    <button type="button" class="tool-btn" data-action="bold" title="加粗">B</button>
+                    <button type="button" class="tool-btn" data-action="italic" title="斜体"><em>I</em></button>
+                    <button type="button" class="tool-btn" data-action="strike" title="删除线"><s>S</s></button>
+                    <span class="tool-sep"></span>
+                    <button type="button" class="tool-btn" data-action="h2" title="标题">H</button>
+                    <button type="button" class="tool-btn" data-action="ul" title="无序列表">•≡</button>
+                    <button type="button" class="tool-btn" data-action="ol" title="有序列表">1≡</button>
+                    <button type="button" class="tool-btn" data-action="quote" title="引用">❝</button>
+                    <span class="tool-sep"></span>
+                    <button type="button" class="tool-btn" data-action="code" title="行内代码">&lt;/&gt;</button>
+                    <button type="button" class="tool-btn" data-action="link" title="链接">🔗</button>
+                    <button type="button" class="tool-btn" data-action="image" title="图片">🖼</button>
+                    <button type="button" class="tool-btn" data-action="upload" title="上传图片"
+                        data-upload="edit-example">⬆</button>
+                </div>
+                <textarea id="edit-example" maxlength="1024"></textarea>
+                <div class="md-preview hidden" data-preview="edit-example"></div>
+                <span class="char-count" data-for="edit-example">0 / 1024</span>
+                <div class="field-tabs">
+                    <label>备注</label>
+                    <div class="tab-buttons" data-target="edit-note">
+                        <button type="button" class="tab-btn active" data-mode="edit">编辑</button>
+                        <button type="button" class="tab-btn" data-mode="preview">预览</button>
+                    </div>
+                </div>
+                <div class="md-toolbar" data-target="edit-note">
+                    <button type="button" class="tool-btn" data-action="bold" title="加粗">B</button>
+                    <button type="button" class="tool-btn" data-action="italic" title="斜体"><em>I</em></button>
+                    <button type="button" class="tool-btn" data-action="strike" title="删除线"><s>S</s></button>
+                    <span class="tool-sep"></span>
+                    <button type="button" class="tool-btn" data-action="h2" title="标题">H</button>
+                    <button type="button" class="tool-btn" data-action="ul" title="无序列表">•≡</button>
+                    <button type="button" class="tool-btn" data-action="ol" title="有序列表">1≡</button>
+                    <button type="button" class="tool-btn" data-action="quote" title="引用">❝</button>
+                    <span class="tool-sep"></span>
+                    <button type="button" class="tool-btn" data-action="code" title="行内代码">&lt;/&gt;</button>
+                    <button type="button" class="tool-btn" data-action="link" title="链接">🔗</button>
+                    <button type="button" class="tool-btn" data-action="image" title="图片">🖼</button>
+                    <button type="button" class="tool-btn" data-action="upload" title="上传图片"
+                        data-upload="edit-note">⬆</button>
+                </div>
+                <textarea id="edit-note" maxlength="1024"></textarea>
+                <div class="md-preview hidden" data-preview="edit-note"></div>
+                <span class="char-count" data-for="edit-note">0 / 1024</span>
+                <label>状态</label>
+                <select id="edit-status">
+                    <option value="new">新词</option>
+                    <option value="learning">学习中</option>
+                    <option value="mastered">已掌握</option>
+                </select>
+                <div class="modal-actions">
+                    <button type="button" class="btn btn-secondary" id="cancel-edit">取消</button>
+                    <button type="submit" class="btn btn-primary">保存</button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <script type="module" src="/src/main.js"></script>
+</body>
+
+</html>
