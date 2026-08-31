@@ -49,20 +49,83 @@ let allWords = []; // Cache all words for time grouping
 let editingId = null;
 
 // ========== Character count ==========
+// Content over this length is auto-compressed (whitespace collapsed), never truncated.
+const COMPRESS_THRESHOLD = 1024;
+
 function updateCharCount(textarea) {
     const counter = document.querySelector(`.char-count[data-for="${textarea.id}"]`);
     if (!counter) return;
     const len = textarea.value.length;
-    const max = parseInt(textarea.maxLength, 10) || 0;
-    counter.textContent = `${len} / ${max}`;
-    counter.classList.toggle('near-limit', max > 0 && len > max * 0.8);
-    counter.classList.toggle('at-limit', max > 0 && len >= max);
+    counter.textContent = `${len}`;
+    // Highlight when the content is over the auto-compression threshold.
+    counter.classList.toggle('over-threshold', len > COMPRESS_THRESHOLD);
 }
 
 function initCharCounts() {
-    document.querySelectorAll('textarea[maxlength]').forEach((textarea) => {
+    const targets = [
+        'meaning-input', 'example-input', 'note-input',
+        'edit-meaning', 'edit-example', 'edit-note',
+    ];
+    targets.forEach((id) => {
+        const textarea = document.getElementById(id);
+        if (!textarea) return;
         updateCharCount(textarea);
         textarea.addEventListener('input', () => updateCharCount(textarea));
+    });
+}
+
+// ========== Auto-compression ==========
+// Word / phrase (single-line input) is excluded from compression.
+// meaning / example / note (markdown textareas) auto-compress when content
+// exceeds the COMPRESS_THRESHOLD to keep entries concise.
+
+/**
+ * Compress text by collapsing excessive whitespace/newlines. Never truncates —
+ * the full content is always preserved. Preserves Markdown structure where possible.
+ * @param {string} text Raw text
+ * @returns {string} Compressed text
+ */
+function compressText(text) {
+    if (!text) return text;
+    let result = text;
+
+    // Collapse runs of 3+ newlines down to 2 (preserve paragraph breaks).
+    result = result.replace(/\n{3,}/g, '\n\n');
+    // Collapse multiple spaces/tabs (but not newlines) to a single space.
+    result = result.replace(/[ \t]+/g, ' ');
+    // Trim trailing/leading whitespace on each line.
+    result = result
+        .split('\n')
+        .map((line) => line.trim())
+        .join('\n')
+        .trim();
+
+    return result;
+}
+
+// Auto-compress the markdown textareas (meaning/example/note) when they exceed
+// the threshold. Fires on input so the user sees the compressed result live.
+// Content is never truncated — only whitespace is collapsed.
+function initAutoCompress() {
+    const targets = [
+        'meaning-input', 'example-input', 'note-input',
+        'edit-meaning', 'edit-example', 'edit-note',
+    ];
+    targets.forEach((id) => {
+        const textarea = document.getElementById(id);
+        if (!textarea) return;
+        textarea.addEventListener('input', () => {
+            if (textarea.value.length <= COMPRESS_THRESHOLD) return;
+            const compressed = compressText(textarea.value);
+            if (compressed !== textarea.value) {
+                const start = textarea.selectionStart;
+                textarea.value = compressed;
+                // Keep the cursor within bounds.
+                const pos = Math.min(start, compressed.length);
+                textarea.setSelectionRange(pos, pos);
+                updateCharCount(textarea);
+            }
+        });
     });
 }
 
@@ -789,4 +852,5 @@ initCharCounts();
 initMarkdownTabs();
 initMarkdownToolbar();
 initImagePaste();
+initAutoCompress();
 init();

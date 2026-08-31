@@ -508,12 +508,8 @@ body {
     margin-top: 4px;
 }
 
-.char-count.near-limit {
+.char-count.over-threshold {
     color: var(--warning);
-}
-
-.char-count.at-limit {
-    color: var(--danger);
 }
 
 /* Toolbar */
